@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width; initial-scale=1.0">
+    <script type= "text/javascript" src="/Users/ScottAnderson/Documents/node_modules/paper/dist/paper-full.js"></script>
+    <script type="text/paperscript" src="paper_script.js" canvas="canvas"></script>
+    <link href="svg_style.css" type="text/css" rel="stylesheet"/>
+  </head>
+  <body>
+    <div id="opts">
+      <input id="tool" type="range" name="tool" min="1" max="10" value="1" step="1" id="toolSize"/>
+      <input id="smooth" type="range" name="flatten" min="1" max="10" value="1" step="1" id="smooth"/>
+      <input id="flatten" type="range" name="flatten" min="1" max="10" value="1" step="1" id="flatten"/>
+    </div>
+    <main>
+      <canvas id="canvas" resize></canvas>
+    </main>
+  </body>
+</html>

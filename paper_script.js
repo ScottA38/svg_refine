@@ -1,3 +1,26 @@
+function findChildPaths (item)
+//function to find all paths within an SVG group item returned by .importSVG(<svgFile>).
+{
+  if (!(typeof item == "Object" && item.className == "Group")) {
+    throw new Exception("The argument given to function 'findChildPaths()' is not a JavaScript object of prototype class 'Group'");
+  }
+  //initialise a variable to hold all of the compound
+  var firstChildren = [];
+
+  for (path in item.children) {
+    var regExp = new RegExp("^path\w*",'i');
+    if (regExp.test(path.toString())) {
+      //add the found path element to the 'firstChildren' array object
+      firstChildren.push(item.children[path]);
+      console.log("compPath found!: " + compPath.name);
+      console.log("typeof compPath: " + typeof compPath);
+      console.log(Object.keys(compPath));
+    }
+    else {
+      console.log("compPath could not be found in svgItem");
+    }
+  }
+}
 
 //code to set up a circle which will follow the mouse cursor whilst in the canvas
 var path = new Path.Circle({
@@ -11,7 +34,7 @@ var path = new Path.Circle({
 
 //initialise a variable to hold the svg callback item from .importSVG()
 var svgItem;
-var compPath;
+
 
 //import SVG item into the canvas
 project.importSVG("http://localhost:8080/PCB-trace.svg", {
@@ -19,6 +42,8 @@ project.importSVG("http://localhost:8080/PCB-trace.svg", {
     item.center = view.center;
     svgItem = item;
     console.log("item: " + item);
+    console.log("item.class: ", item.className);
+    console.log(item);
     console.log("item.children: " + item.children);
     console.log(item.children);
     console.log("item.children[-1]: " + item.children[(item.children.length - 1)]);
@@ -28,20 +53,6 @@ project.importSVG("http://localhost:8080/PCB-trace.svg", {
        Approach 2: Determine how big the bounds of a shape is relative to the canvas vh and vw. If below a certain percetage in both directions (vh, vw), then delete this path
 
        After this check the accuracy and if ok (no important material gone)*/
-    for (path in item.children) {
-      console.log("path: " + path);
-      console.log("typeof item: ", typeof path);
-      console.log(Object.keys(path));
-      console.log(item.children[path].name);
-      var regExp = new RegExp("^path\w*",'i');
-      if (regExp.test(item.children[path].name)) {
-        compPath = item.children[path];
-        console.log(compPath.name);
-      }
-      else {
-        console.log("compPath could not be found in svgItem");
-      }
-    }
   }
 });
 

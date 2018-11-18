@@ -1,23 +1,35 @@
-function findChildPaths (item)
+function disseminatePathGroup (item)
 //function to find all paths within an SVG group item returned by .importSVG(<svgFile>).
 {
-  if (!(typeof item == "Object" && item.className == "Group")) {
-    throw new Exception("The argument given to function 'findChildPaths()' is not a JavaScript object of prototype class 'Group'");
+  if (!(typeof item == "object" && item.className == "Group")) {
+    throw "The argument given to function 'findChildPaths()' is not a JavaScript object of prototype class 'Group', it is of class '" + item.className + "'";
   }
   //initialise a variable to hold all of the compound
-  var firstChildren = [];
+  var collectedPaths = [];
+}
 
-  for (path in item.children) {
-    var regExp = new RegExp("^path\w*",'i');
-    if (regExp.test(path.toString())) {
+//maybe a bit risky abstracting class name away
+function disseminate(item, pathArray, inputName, acceptNames)
+{
+  if (!(typeof item == "object" && item.classname == inputName)) {
+    throw "Argument given to 'findChildPaths()' is not a JavaScript object or of paperJS class ${inputName}. It is of class: '" + item.className + "'";
+  }
+  var childs = item.children;
+
+  for (var i=0; i < item.children.length; i++) {
+    if (childs[i].className == "CompoundPath")
+    {
+      pathArray.pop(inputName);
+      disseminate(childs[i], inputName, pathArray, ['Path']);
+    }
+    else if (childs[i].className == "Path") {
       //add the found path element to the 'firstChildren' array object
-      firstChildren.push(item.children[path]);
-      console.log("compPath found!: " + compPath.name);
-      console.log("typeof compPath: " + typeof compPath);
-      console.log(Object.keys(compPath));
+      firstChildren.push(childs[i]);
+      console.log("path found!: " + childs[i].name);
+      console.log("typeof path: " + typeof childs[i]);
     }
     else {
-      console.log("compPath could not be found in svgItem");
+      console.log("An object found withing svg group item which is not of type 'Path' or 'CompoundPath', it is of class: '" + childs[i].className + "'");
     }
   }
 }
@@ -36,6 +48,7 @@ var path = new Path.Circle({
 var svgItem;
 
 
+
 //import SVG item into the canvas
 project.importSVG("http://localhost:8080/PCB-trace.svg", {
   onLoad : function (item) {
@@ -50,9 +63,12 @@ project.importSVG("http://localhost:8080/PCB-trace.svg", {
     //console.log("item.children[-1].children: " + item.children[(item.children.length -1 )].children);
 
     /* Approach 1: Make averages with all path's average size. Try deleting everything below the median
-       Approach 2: Determine how big the bounds of a shape is relative to the canvas vh and vw. If below a certain percetage in both directions (vh, vw), then delete this path
+       Approach 2: Determine how big the bounds of a shape is relative to the canvas vh and vw.
+       If below a certain percetage in both directions (vh, vw), then delete this path
 
-       After this check the accuracy and if ok (no important material gone)*/
+       After this check the accuracy of material removal*/
+    collectedPaths = findChildPaths(item);
+    console.log(pathChildren);
   }
 });
 

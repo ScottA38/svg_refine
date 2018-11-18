@@ -10,8 +10,12 @@
   <body>
     <div id="opts">
       <input id="tool" type="range" name="tool" min="1" max="10" value="1" step="1" id="toolSize"/>
-      <input id="smooth" type="range" name="flatten" min="1" max="10" value="1" step="1" id="smooth"/>
+      <input id="smooth" type="range" name="smooth" min="1" max="10" value="1" step="1" id="smooth"/>
       <input id="flatten" type="range" name="flatten" min="1" max="10" value="1" step="1" id="flatten"/>
+      <input id="smoothWhole" type="checkbox" name="smoothWhole" value="Smoothing"/>
+      <input id="simplifyWhole" type="checkbox" name="simplifyWhole" value="Simplifying"/>
+      <input id="zoomIn" type="button" name="zoomIn" value="+"/>
+      <input id="zoomOut" type="button" name="zoomOut" value="-"/>  
     </div>
     <main>
       <canvas id="canvas" resize></canvas>

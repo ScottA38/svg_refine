@@ -1,38 +1,56 @@
-function disseminatePathGroup (item)
+function allPathChildren (item)
 //function to find all paths within an SVG group item returned by .importSVG(<svgFile>).
 {
   if (!(typeof item == "object" && item.className == "Group")) {
-    throw "The argument given to function 'findChildPaths()' is not a JavaScript object of prototype class 'Group', it is of class '" + item.className + "'";
+    throw "The argument given to function 'allPathChildren()' is not a JavaScript object of prototype class 'Group', it is of class '" + item.className + "'";
   }
-  //initialise a variable to hold all of the compound
-  var collectedPaths = [];
+  disseminate(item, "Group", ["Path", "CompoundPath", "Group"]);
 }
 
-//maybe a bit risky abstracting class name away
-function disseminate(item, pathArray, inputName, acceptNames)
+//maybe a bit risky using recursion here (this level of abstraction required?)
+function disseminate(item, inputName, acceptNames)
 {
-  if (!(typeof item == "object" && item.classname == inputName)) {
-    throw "Argument given to 'findChildPaths()' is not a JavaScript object or of paperJS class ${inputName}. It is of class: '" + item.className + "'";
+  if (typeof item != "object" || acceptNames.indexOf(item.className) == -1) {
+    throw "Argument given to 'findChildPaths()' is not a JavaScript object or is not paperJS class ${inputName}. It is of class: '" + item.className + "'";
   }
   var childs = item.children;
-
-  for (var i=0; i < item.children.length; i++) {
-    if (childs[i].className == "CompoundPath")
-    {
-      pathArray.pop(inputName);
-      disseminate(childs[i], inputName, pathArray, ['Path']);
+  for (var i=0; i < childs.length; i++) {
+    if (childs[i].className == acceptNames[0]) {
+      //add the found path element to the 'firstChildren' array object. This is a superior scope variable and doesn't need to be returned
+      collectedPaths.push(childs[i]);
+      console.log("Path item found");
     }
-    else if (childs[i].className == "Path") {
-      //add the found path element to the 'firstChildren' array object
-      firstChildren.push(childs[i]);
-      console.log("path found!: " + childs[i].name);
-      console.log("typeof path: " + typeof childs[i]);
+    else if (acceptNames.indexOf(childs[i].className) > 0) {
+      console.log(childs[i].className + " found, recursing..")
+      disseminate(childs[i], acceptNames.indexOf(childs[i].className), acceptNames);
     }
     else {
       console.log("An object found withing svg group item which is not of type 'Path' or 'CompoundPath', it is of class: '" + childs[i].className + "'");
     }
   }
 }
+
+function loadSVG(url) {
+  //import SVG item into the canvas
+  project.importSVG(url, {
+    onLoad : function (item) {
+      item.center = view.center;
+      svgItem = item;
+      //console.log("item.children[-1].children: " + item.children[(item.children.length -1 )].children);
+
+      /* Approach 1: Make averages with all path's average size. Try deleting everything below the median
+         Approach 2: Determine how big the bounds of a shape is relative to the canvas vh and vw.
+         If below a certain percetage in both directions (vh, vw), then delete this path
+
+         After this check the accuracy of material removal */
+      allPathChildren(item);
+      console.log(collectedPaths);
+    }
+  });
+
+}
+//variable to hold SVG image url as a constant for the document
+var url = "http://localhost:8080/PCB-trace.svg";
 
 //code to set up a circle which will follow the mouse cursor whilst in the canvas
 var path = new Path.Circle({
@@ -46,31 +64,11 @@ var path = new Path.Circle({
 
 //initialise a variable to hold the svg callback item from .importSVG()
 var svgItem;
+//initialise a variable to hold all of the paths
+var collectedPaths = [];
 
-
-
-//import SVG item into the canvas
-project.importSVG("http://localhost:8080/PCB-trace.svg", {
-  onLoad : function (item) {
-    item.center = view.center;
-    svgItem = item;
-    console.log("item: " + item);
-    console.log("item.class: ", item.className);
-    console.log(item);
-    console.log("item.children: " + item.children);
-    console.log(item.children);
-    console.log("item.children[-1]: " + item.children[(item.children.length - 1)]);
-    //console.log("item.children[-1].children: " + item.children[(item.children.length -1 )].children);
-
-    /* Approach 1: Make averages with all path's average size. Try deleting everything below the median
-       Approach 2: Determine how big the bounds of a shape is relative to the canvas vh and vw.
-       If below a certain percetage in both directions (vh, vw), then delete this path
-
-       After this check the accuracy of material removal*/
-    collectedPaths = findChildPaths(item);
-    console.log(pathChildren);
-  }
-});
+//load the SVG into the HTML canvas element
+loadSVG(url);
 
 //check the cursor's current position and re-centre the path to this point
 tool.onMouseMove = function(event) {
@@ -82,6 +80,9 @@ tool.onMouseMove = function(event) {
 var toolSize = document.getElementById("tool");
 var smoothTool = document.getElementById("smooth");
 var simplifyTool = document.getElementById("flatten");
+var smoothWhole = document.getElementById("smoothWhole");
+var zoomIn = document.getElementById("zoomIn");
+var zoomOut = document.getElementById("zoomOut");
 
 var modPath; //a path to track the mouse drag without shift to show area which needs to be refined
 tool.minDistance = 10;
@@ -98,7 +99,37 @@ smoothTool.addEventListener('change', function(event) {
 
 simplifyTool.addEventListener('change', function(event) {
   console.log("Simplification value changed, new value is: " + event.target.value);
-})
+});
+
+smoothWhole.addEventListener('change', function(event) {
+  if (this.checked) {
+    for (var i=0; i < collectedPaths.length; i++) {
+      collectedPaths[i].smooth({ type: 'continuous'});
+    }
+  }
+  else {
+    //clear the html canvas
+    project.clear();
+    //reload the svg to remove the simplification
+    loadSVG(url);
+  }
+});
+
+simplifyWhole.addEventListener('change', function(event) {
+  if (this.checked) {
+    for (var i=0; i < collectedPaths.length; i++) {
+      var completed = collectedPaths[i].simplify(0.5  );
+      if (!completed) {
+        console.log("Path " + collectedPaths[i].name + " could not be simplified.")
+      }
+    }
+  }
+  else {
+    project.clear();
+    loadSVG(url);
+  }
+});
+
 
 //generate a path over the svg whilst the mouse is clicked
 tool.onMouseDown = function(event) {

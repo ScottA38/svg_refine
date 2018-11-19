@@ -4,6 +4,7 @@ function allPathChildren (item)
   if (!(typeof item == "object" && item.className == "Group")) {
     throw "The argument given to function 'allPathChildren()' is not a JavaScript object of prototype class 'Group', it is of class '" + item.className + "'";
   }
+  biggestBounds = 0;
   disseminate(item, "Group", ["Path", "CompoundPath", "Group"]);
 }
 
@@ -16,9 +17,12 @@ function disseminate(item, inputName, acceptNames)
   var childs = item.children;
   for (var i=0; i < childs.length; i++) {
     if (childs[i].className == acceptNames[0]) {
+      if (childs[i].bounds.area > biggestBounds) {
+        biggestBounds = childs[i].bounds.area;
+      }
       //add the found path element to the 'firstChildren' array object. This is a superior scope variable and doesn't need to be returned
       collectedPaths.push(childs[i]);
-      console.log("Path item found");
+      console.log("${acceptNames[0]} item found");
     }
     else if (acceptNames.indexOf(childs[i].className) > 0) {
       console.log(childs[i].className + " found, recursing..")
@@ -45,10 +49,11 @@ function loadSVG(url) {
          After this check the accuracy of material removal */
       allPathChildren(item);
       console.log(collectedPaths);
+      console.log("biggestBounds area is: " + biggestBounds);
     }
   });
-
 }
+
 //variable to hold SVG image url as a constant for the document
 var url = "http://localhost:8080/PCB-trace.svg";
 
@@ -66,6 +71,8 @@ var path = new Path.Circle({
 var svgItem;
 //initialise a variable to hold all of the paths
 var collectedPaths = [];
+//variable to hold path with highest bounds area. Computed and saved upon svg import to save iterating over svg paths repeatedly
+var biggestBounds = 0 ;
 
 //load the SVG into the HTML canvas element
 loadSVG(url);
@@ -81,6 +88,7 @@ var toolSize = document.getElementById("tool");
 var smoothTool = document.getElementById("smooth");
 var simplifyTool = document.getElementById("flatten");
 var smoothWhole = document.getElementById("smoothWhole");
+var despeck = document.getElementById("despeck");
 var zoomIn = document.getElementById("zoomIn");
 var zoomOut = document.getElementById("zoomOut");
 
@@ -118,7 +126,7 @@ smoothWhole.addEventListener('change', function(event) {
 simplifyWhole.addEventListener('change', function(event) {
   if (this.checked) {
     for (var i=0; i < collectedPaths.length; i++) {
-      var completed = collectedPaths[i].simplify(0.5  );
+      var completed = collectedPaths[i].simplify(0.5);
       if (!completed) {
         console.log("Path " + collectedPaths[i].name + " could not be simplified.")
       }
@@ -130,6 +138,32 @@ simplifyWhole.addEventListener('change', function(event) {
   }
 });
 
+despeck.addEventListener('change', function(event) {
+  console.log('event.target.value: ' + event.target.value);
+  var entry = (parseInt(event.target.value, 10) / 100);
+  if (entry > 0.5 || typeof entry != 'number') {
+    throw "Either a non-numerical character or a number higer than 50 was entered";
+  }
+  else if (entry < 0.01) {
+    throw "Supplied despeck parameter cannot be below 1";
+  }
+  for (var i=0; i < collectedPaths.length; i++) {
+    //test if the current iterated path has an area less than the largest path's bounds area timesed by the user-inputted scale-factor
+    if (collectedPaths[i].bounds.area < (biggestBounds * entry)) {
+      console.log("Removed 'speck'");
+      collectedPaths[i].remove();
+    }
+  }
+  console.log(collectedPaths);
+});
+
+zoomIn.addEventListener('click', function(event) {
+  view.scale(1.2, 1.2);
+});
+
+zoomOut.addEventListener('click', function(event) {
+  view.scale(0.8, 0.8);
+})
 
 //generate a path over the svg whilst the mouse is clicked
 tool.onMouseDown = function(event) {
